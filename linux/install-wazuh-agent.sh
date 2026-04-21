@@ -8,13 +8,13 @@ set -e
 # ==========================================
 # 1. Configuration Block (Variables)
 # ==========================================
-WAZUH_MANAGER="YOUR_MANAGER_IP"
-WAZUH_REG_PASS="YOUR_PASSWORD"
+WAZUH_MANAGER="[IP/DNS]"
+WAZUH_REG_PASS="[PASSWORD]"
 
 # Internal package repository
-REPO_URL="http://dep.infra.local/linux"
-WAZUH_DEB_PKG="wazuh-agent_4.7.3-1_amd64.deb"
-WAZUH_RPM_PKG="wazuh-agent-4.7.3-1.x86_64.rpm"
+REPO_URL="http://[IP/DNS]/linux"
+WAZUH_DEB_PKG="wazuh-agent_amd64.deb"
+WAZUH_RPM_PKG="wazuh-agent-x86_64.rpm"
 
 # ==========================================
 # Utility Functions

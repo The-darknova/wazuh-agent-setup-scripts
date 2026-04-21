@@ -11,13 +11,13 @@
 $ErrorActionPreference = "Stop"
 
 # 1. Configuration Block (The Variables)
-$ManagerIP   = "YOUR_IP"
-$RegPassword = "YOUR_PASSWORD"
+$ManagerIP   = "[IP/DNS]"
+$RegPassword = "[PASSWORD]"
 
 # Reverted to your internal infrastructure to avoid internet dependency and supply chain attacks
-$WazuhMSI     = "https://dep.infra.local/windows/wazuh-agent.msi"
-$SysmonEXE    = "https://dep.infra.local/windows/Sysmon64.exe"
-$SysmonConfig = "https://dep.infra.local/windows/sysmonconfig-export.xml"
+$WazuhMSI     = "http://[IP/DNS]/windows/wazuh-agent.msi"
+$SysmonEXE    = "http://[IP/DNS]/windows/Sysmon64.exe"
+$SysmonConfig = "http://[IP/DNS]/windows/sysmonconfig-export.xml"
 
 # Workspace
 $InstallDir       = "C:\windows\temp\security-install"
@@ -82,7 +82,7 @@ try {
     }
     Invoke-WebRequest -Uri $SysmonConfig -OutFile $SysmonConfigPath -UseBasicParsing
     
-    $sysmonArgs = "-i `"$SysmonConfigPath`" -accepteula -q"
+    $sysmonArgs = @("-i", "$SysmonConfigPath", "-accepteula")
     $pSysmon = Start-Process -FilePath $SysmonEXEPath -ArgumentList $sysmonArgs -Wait -PassThru -WindowStyle Hidden
     
     if ($pSysmon.ExitCode -ne 0) {
