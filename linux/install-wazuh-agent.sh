@@ -112,17 +112,21 @@ if ! curl -sSL --fail "$DOWNLOAD_URL" -o "$PKG_FILE"; then
     error "Download failed. Please check the URL or network connectivity."
 fi
 
-log "Injecting Wazuh Manager IP and Registration Password..."
-export WAZUH_MANAGER="$WAZUH_MANAGER"
-export WAZUH_REGISTRATION_PASSWORD="$WAZUH_REG_PASS"
-
 log "Starting package installation..."
-# Using apt-get/yum install on the local file ensures missing dependencies are resolved automatically
+# Using apt-get/yum ensures missing dependencies are resolved automatically
 if [ "$OS_FAMILY" == "debian" ]; then
     DEBIAN_FRONTEND=noninteractive $PKG_MANAGER install -y "$PKG_FILE"
 elif [ "$OS_FAMILY" == "redhat" ]; then
     $PKG_MANAGER install -y "$PKG_FILE"
 fi
+
+log "Configuring Wazuh Manager IP..."
+# Manually replace the placeholder IP with your manager's IP
+sed -i "s/MANAGER_IP/$WAZUH_MANAGER/g" /var/ossec/etc/ossec.conf
+
+log "Enrolling agent with Wazuh Manager..."
+# Explicitly run the enrollment tool with the password
+/var/ossec/bin/agent-auth -m "$WAZUH_MANAGER" -P "$WAZUH_REG_PASS"
 
 # ==========================================
 # 6. Service & Verification
