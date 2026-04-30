@@ -127,6 +127,15 @@ fi
 # ==========================================
 # 6. Service & Verification
 # ==========================================
+log "Enforcing English locale for Wazuh agent..."
+mkdir -p /etc/systemd/system/wazuh-agent.service.d/
+cat <<EOF > /etc/systemd/system/wazuh-agent.service.d/override.conf
+[Service]
+Environment="LANG=en_US.UTF-8"
+Environment="LC_ALL=en_US.UTF-8"
+EOF
+systemctl daemon-reload
+
 log "Configuring service to start on boot..."
 systemctl enable wazuh-agent
 

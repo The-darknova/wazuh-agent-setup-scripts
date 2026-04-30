@@ -96,6 +96,13 @@ try {
 # 5. Validation & Telemetry
 $ErrorActionPreference = "Continue"
 
+Write-Output "Enforcing English locale for Wazuh Agent..."
+$wazuhSvcRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\WazuhSvc"
+if (Test-Path $wazuhSvcRegPath) {
+    Stop-Service -Name "WazuhSvc" -Force -ErrorAction SilentlyContinue
+    New-ItemProperty -Path $wazuhSvcRegPath -Name "Environment" -Value @("LANG=en_US.UTF-8", "LC_ALL=en_US.UTF-8") -PropertyType MultiString -Force | Out-Null
+}
+
 Write-Output "Validating Services..."
 Start-Service -Name "WazuhSvc" -ErrorAction SilentlyContinue
 Start-Service -Name "Sysmon64" -ErrorAction SilentlyContinue
