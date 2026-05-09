@@ -5,9 +5,7 @@
 
 set -e
 
-# ==========================================
-# 1. Configuration Block (Variables)
-# ==========================================
+# Configuration
 WAZUH_MANAGER="[IP/DNS]"
 WAZUH_REG_PASS="[PASSWORD]"
 
@@ -16,9 +14,7 @@ REPO_URL="http://[IP/DNS]/linux"
 WAZUH_DEB_PKG="wazuh-agent_amd64.deb"
 WAZUH_RPM_PKG="wazuh-agent-x86_64.rpm"
 
-# ==========================================
 # Utility Functions
-# ==========================================
 log() { echo -e "[INFO] $1"; }
 error() { echo -e "[ERROR] $1" >&2; exit 1; }
 
@@ -26,15 +22,13 @@ if [ "$EUID" -ne 0 ]; then
     error "Please run this script as root (e.g., sudo bash)."
 fi
 
-# ==========================================
-# 2. Intelligent Distro Detection
-# ==========================================
+# Intelligent Distro Detection
 log "Detecting operating system..."
 
 if [ ! -f /etc/os-release ]; then
     error "/etc/os-release not found. Cannot determine the Linux distribution."
 fi
-
+# shellcheck source=/dev/null
 source /etc/os-release
 
 OS_FAMILY=""
@@ -58,9 +52,7 @@ fi
 
 log "Detected OS Family: $OS_FAMILY ($PKG_MANAGER)"
 
-# ==========================================
-# 3. Prerequisite Check (Ensuring curl exists)
-# ==========================================
+# Prerequisite Check (Ensuring curl exists)
 if ! command -v curl >/dev/null 2>&1; then
     log "curl is missing. Installing curl..."
     if [ "$OS_FAMILY" == "debian" ]; then
@@ -70,9 +62,7 @@ if ! command -v curl >/dev/null 2>&1; then
     fi
 fi
 
-# ==========================================
-# 4. "Hard Purge" Cleanup
-# ==========================================
+# Hard Purge Cleanup
 log "Initiating cleanup of existing installations..."
 
 if systemctl list-unit-files wazuh-agent.service >/dev/null 2>&1; then
@@ -93,9 +83,7 @@ if [ -d "/var/ossec" ]; then
     rm -rf /var/ossec || error "Failed to delete /var/ossec."
 fi
 
-# ==========================================
-# 5. Adaptive Installation Logic
-# ==========================================
+# Adaptive Installation Logic
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
@@ -128,9 +116,7 @@ log "Enrolling agent with Wazuh Manager..."
 # Explicitly run the enrollment tool with the password
 /var/ossec/bin/agent-auth -m "$WAZUH_MANAGER" -P "$WAZUH_REG_PASS"
 
-# ==========================================
-# 6. Service & Verification
-# ==========================================
+# Service & Verification
 log "Enforcing English locale for Wazuh agent..."
 mkdir -p /etc/systemd/system/wazuh-agent.service.d/
 cat <<EOF > /etc/systemd/system/wazuh-agent.service.d/override.conf

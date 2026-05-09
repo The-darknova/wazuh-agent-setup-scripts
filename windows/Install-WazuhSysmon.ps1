@@ -6,15 +6,15 @@
     Designed for single-pipe execution (iwr | iex).
 #>
 
-# Force TLS 1.2 for secure downloads (Critical for older Windows Servers)
+# Force TLS 1.2 for secure downloads
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Stop"
 
-# 1. Configuration Block (The Variables)
+# Configuration
 $ManagerIP = "[IP/DNS]"
 $RegPassword = "[PASSWORD]"
 
-# Reverted to your internal infrastructure to avoid internet dependency and supply chain attacks
+# Internal infrastructure
 $WazuhMSI = "http://[IP/DNS]/windows/wazuh-agent.msi"
 $SysmonEXE = "http://[IP/DNS]/windows/Sysmon64.exe"
 $SysmonConfig = "http://[IP/DNS]/windows/sysmonconfig-export.xml"
@@ -26,7 +26,7 @@ $SysmonEXEPath = "$InstallDir\Sysmon64.exe"
 $SysmonConfigPath = "$InstallDir\sysmonconfig.xml"
 $InstallDir_Wazuh = "C:\Program Files (x86)\ossec-agent"
 
-# 2. Cleanup Phase (Ensure a Clean Slate)
+# Cleanup Phase
 If (Test-Path $InstallDir) {
     Remove-Item -Path $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
 }
@@ -39,37 +39,28 @@ try {
         Write-Output "Existing Sysmon found. Uninstalling..."
         Invoke-WebRequest -Uri $SysmonEXE -OutFile $SysmonEXEPath -UseBasicParsing
         
-        # Fixed: Removed the dash from force and split the arguments into an array
-        $p = Start-Process -FilePath $SysmonEXEPath -ArgumentList @("-u", "force") -Wait -PassThru -WindowStyle Hidden
+        Start-Process -FilePath $SysmonEXEPath -ArgumentList @("-u", "force") -Wait -PassThru -WindowStyle Hidden
         
-        # Critical: Give Windows time to unregister the driver and service
         Start-Sleep -Seconds 3 
     }
 
     # Wazuh Cleanup: Find via Registry and uninstall
-    # Enhanced Wazuh Cleanup
     $wazuhSvc = Get-Service -Name "WazuhSvc" -ErrorAction SilentlyContinue
     if ($wazuhSvc) {
         Write-Output "Stopping existing Wazuh service..."
         Stop-Service -Name "WazuhSvc" -Force -ErrorAction SilentlyContinue
     }
 
-    # 1. Try generic MSI uninstall via WMI (Catches all versions)
+    # Generic MSI uninstall via WMI
     $wazuhApp = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -match "Wazuh Agent" }
     if ($wazuhApp) {
         Write-Output "Uninstalling Wazuh via WMI..."
         $wazuhApp.Uninstall() | Out-Null
     }
 
-    # 2. Force purge the specific known Product Code just in case WMI misses it
-    Write-Output "Purging known Wazuh GUIDs..."
-    $pArgs = "/x `"{6B0320B5-3B7E-448E-BF58-9C95D34C14FC}`" /qn /norestart"
-    Start-Process "msiexec.exe" -ArgumentList $pArgs -Wait -NoNewWindow
-
-    # 3. Nuke the service definition
+    # Nuke the service definition
     sc.exe delete "WazuhSvc" | Out-Null
 
-    # Critical: Give Windows a moment to release file locks and flush the MSI cache
     Start-Sleep -Seconds 5
     Remove-Item -Path $InstallDir_Wazuh -Recurse -Force -ErrorAction SilentlyContinue
 }
@@ -77,12 +68,11 @@ catch {
     Write-Warning "Could not perform total clean-up. Proceeding to installation: $($_.Exception.Message)"
 }
 
-# 3. Wazuh Deployment Logic
+# Wazuh Deployment Logic
 try {
     Write-Output "Downloading and installing Wazuh Agent..."
     Invoke-WebRequest -Uri $WazuhMSI -OutFile $WazuhMSIPath -UseBasicParsing
     
-    # Passing arguments as an array prevents PowerShell quote-mangling
     $wazuhArgs = @(
         "/i", $WazuhMSIPath,
         "/qn",
@@ -113,7 +103,7 @@ catch {
     exit 1
 }
 
-# 4. Sysmon Deployment Logic
+# Sysmon Deployment Logic
 try {
     Write-Output "Downloading and installing Sysmon..."
     if (-not (Test-Path $SysmonEXEPath)) {
@@ -133,7 +123,7 @@ catch {
     exit 1
 }
 
-# 5. Validation & Telemetry
+# Validation & Telemetry
 $ErrorActionPreference = "Continue"
 
 Write-Output "Enforcing English locale for Wazuh Agent..."
